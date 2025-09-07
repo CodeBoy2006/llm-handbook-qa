@@ -1,0 +1,12 @@
+fastapi>=0.111
+uvicorn[standard]>=0.30
+python-dotenv>=1.0
+tqdm>=4.66
+
+# LlamaIndex（分模块）
+llama-index-core>=0.11
+llama-index-embeddings-openai>=0.2
+llama-index-vector-stores-chroma>=0.5
+
+# Chroma（使用持久化本地目录）
+chromadb>=1.0.20
