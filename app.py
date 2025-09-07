@@ -3,12 +3,14 @@
 
 import os
 import json
+import hashlib
 from typing import List, Dict, Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Depends, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
 import chromadb
@@ -33,7 +35,9 @@ EMBED_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-large")
 if not EMBED_API_KEY:
     raise RuntimeError("OPENAI_API_KEY 未设置")
 
-Settings.embed_model = OpenAICompatibleEmbedding(api_key=EMBED_API_KEY, base_url=EMBED_BASE_URL, model=EMBED_MODEL)
+Settings.embed_model = OpenAICompatibleEmbedding(
+    api_key=EMBED_API_KEY, base_url=EMBED_BASE_URL, model=EMBED_MODEL
+)
 
 # Chat（生成式回答）
 CHAT_API_KEY = EMBED_API_KEY
@@ -65,6 +69,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ===================== 方案 A：简易 Token 鉴权 =====================
+bearer_scheme = HTTPBearer(auto_error=False)
+
+_RAW_TOKENS = {t.strip() for t in os.getenv("API_TOKENS", "").split(",") if t.strip()}
+_RAW_SHA256 = {t.strip() for t in os.getenv("API_TOKENS_SHA256", "").split(",") if t.strip()}
+
+def _ok_by_plain(token: str) -> bool:
+    return bool(_RAW_TOKENS) and token in _RAW_TOKENS
+
+def _ok_by_sha256(token: str) -> bool:
+    if not _RAW_SHA256:
+        return False
+    digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    return digest in _RAW_SHA256
+
+async def require_token(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    x_api_token: str | None = Header(default=None, alias="X-API-Token"),
+    token_query: str | None = Query(default=None, alias="token"),
+):
+    """
+    允许三种携带方式（优先级从高到低）：
+    1) Authorization: Bearer <token>
+    2) X-API-Token: <token>
+    3) ?token=<token>   （不推荐）
+    """
+    token = None
+    if credentials and credentials.scheme.lower() == "bearer":
+        token = credentials.credentials
+    elif x_api_token:
+        token = x_api_token
+    elif token_query:
+        token = token_query
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
+
+    if _ok_by_plain(token) or _ok_by_sha256(token):
+        return True
+
+    raise HTTPException(status_code=403, detail="Invalid token")
+# =================================================================
+
 class QAHit(BaseModel):
     score: float | None = None
     text: str
@@ -86,11 +133,11 @@ class GenResponse(BaseModel):
     chunk_map: Dict[str, str]
     evidence: List[Dict[str, Any]]
 
-@app.get("/healthz")
+@app.get("/healthz", dependencies=[Depends(require_token)])
 def healthz():
     return {"ok": True}
 
-@app.get("/answer", response_model=GenResponse)
+@app.get("/answer", response_model=GenResponse, dependencies=[Depends(require_token)])
 def answer(
     q: str = Query(..., description="用户问题"),
     k: int = 5,
@@ -104,7 +151,6 @@ def answer(
     retriever.similarity_top_k = k
     nodes = retriever.retrieve(q)
     if not nodes:
-        # 404：与旧行为一致。也可以改为返回空 JSON，由前端决定提示。
         raise HTTPException(status_code=404, detail="未检索到相关内容")
 
     # 组装上下文与 chunk_map：与 LLM 实际看到的内容保持一致
@@ -114,27 +160,20 @@ def answer(
 
     for i, n in enumerate(nodes):
         meta = n.node.metadata or {}
-        # 优先使用已有 chunk_id；若无，则生成稳定占位 id
         cid = str(meta.get("chunk_id") or meta.get("id") or f"chunk_{i+1}")
         text = n.node.get_content() or ""
-        # 控制每段长度，避免超上下文（可按需调整）
         if len(text) > 2000:
             text = text[:2000] + " ..."
         chunk_map[cid] = text
         ordered_ids.append(cid)
-        # 以“[cid] 内容”形式提供给 LLM，便于引用
         context_lines.append(f"[{cid}]\n{text}")
 
-    # ====== 提示词（严格 JSON 输出 + 结论优先 + 每句带 citations）======
     system_prompt = (
         "你是一个严格的《学生手册》助手。"
         "只依据给定的片段作答；不得编造或引入外部知识。"
         "请按指定 JSON schema 输出，且仅输出 JSON（不包含任何多余文本、Markdown 或解释）。"
     )
 
-    # 新的 schema（给 LLM）
-    # - conclusion: 直接答案（选择题给“A/B/C/D”，判断题给“正确/错误”）；一般性问题可为 null 或核心观点摘要。
-    # - answer_list: 推理/依据，逐句原子化，句句给 citations（若“手册未明确规定”，则该句 citations 为空数组）。
     output_schema_hint = """
 {
   "conclusion": "string | null",
@@ -165,7 +204,6 @@ def answer(
         "5) 严格性：不得出现 sources 之外的 chunk_id；不得出现空对象或额外字段；不得输出 Markdown 代码块标记。\n"
     )
 
-    # 发起请求（优先 JSON mode；若不支持则回退）
     try:
         resp = oai_client.chat.completions.create(
             model=CHAT_MODEL,
@@ -181,7 +219,6 @@ def answer(
     except (APIConnectionError, RateLimitError, APIStatusError) as e:
         raise HTTPException(status_code=502, detail=f"生成失败：{e}")
     except Exception:
-        # 某些服务端不支持 response_format，降级重试一次
         try:
             resp = oai_client.chat.completions.create(
                 model=CHAT_MODEL,
@@ -207,29 +244,21 @@ def answer(
             for s in parsed.get("sentences", []):
                 if not isinstance(s, dict):
                     continue
-                # 旧字段名 text -> sentence
                 sentence = str(s.get("text", "")).strip()
                 cits = s.get("citations", [])
                 if not isinstance(cits, list):
                     cits = []
-                # 仅允许已发送的 chunk_id
                 cits = [str(x) for x in cits if str(x) in chunk_map]
                 if sentence:
                     answer_list.append({"sentence": sentence, "citations": cits})
             normalized_answer = {"conclusion": None, "answer_list": answer_list}
         else:
-            # 新版 schema 校验
             if not isinstance(parsed, dict):
                 raise ValueError("JSON 根必须为对象")
 
             conclusion = parsed.get("conclusion", None)
-            if conclusion is None:
-                pass
-            else:
-                # 统一转为字符串
-                conclusion = str(conclusion).strip()
-                if conclusion == "":
-                    conclusion = None
+            if conclusion is not None:
+                conclusion = str(conclusion).strip() or None
 
             alist = parsed.get("answer_list", [])
             if not isinstance(alist, list):
@@ -239,14 +268,10 @@ def answer(
             for item in alist:
                 if not isinstance(item, dict):
                     continue
-                # 支持容错（sentence / text）
-                sentence = str(
-                    item.get("sentence", item.get("text", ""))
-                ).strip()
+                sentence = str(item.get("sentence", item.get("text", ""))).strip()
                 cits = item.get("citations", [])
                 if not isinstance(cits, list):
                     cits = []
-                # 只允许已发送的 chunk_id，并去重保序
                 filtered = []
                 seen = set()
                 for x in cits:
@@ -260,8 +285,7 @@ def answer(
             normalized_answer = {"conclusion": conclusion, "answer_list": normalized_list}
 
     except Exception:
-        # 兜底：将原始文本包一层；无法解析时不强行给结论
-        all_ids = ordered_ids
+        all_ids = [cid for cid in chunk_map.keys()]
         normalized_answer = {
             "conclusion": None,
             "answer_list": [
@@ -281,6 +305,19 @@ def answer(
         "evidence": evidence,
     }
 
+@app.get("/query", response_model=QAResponse, dependencies=[Depends(require_token)])
+def query(q: str = Query(..., description="检索问题"), k: int = 5):
+    retriever.similarity_top_k = k
+    nodes = retriever.retrieve(q)
+    results = [
+        QAHit(
+            score=(float(n.score) if n.score is not None else None),
+            text=n.node.get_content(),
+            metadata=n.node.metadata,
+        )
+        for n in nodes
+    ]
+    return {"query": q, "results": results}
 
-# 托管 / 直接返回 index.html
+# -------------------- 静态前端（务必放在路由之后） --------------------
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
