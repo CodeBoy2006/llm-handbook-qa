@@ -1,28 +1,16 @@
-# docker-compose.yml
-version: '3.8'
+version: "3.9"
+name: llm-qa
 
 services:
   app:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     env_file:
-      - ../.env
+      - ./.env
+    # 挂载你已经准备好的向量库目录（宿主机 ./chroma -> 容器 /app/chroma）
     volumes:
-      - ../chroma:/app/chroma          # 持久化向量库
-      - ../data:/app/data:ro           # 只读源数据（可选）
+      - ./chroma:/app/chroma
     ports:
       - "8000:8000"
     restart: unless-stopped
-
-  # 一次性“构建向量库”的任务容器（需要时运行一次即可）
-  builder:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    env_file:
-      - ../.env
-    command: ["python", "build_index_chroma.py", "--input", "data/handbook.txt"]
-    volumes:
-      - ../chroma:/app/chroma
-      - ../data:/app/data:ro

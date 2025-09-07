@@ -2,13 +2,10 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>学生手册智能问答（新版：含结论）</title>
   <style>
-    /* ---------- Base Reset ---------- */
+    /* ---------- Base Reset (省略，与你提供的一致) ---------- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root{
       --bg:#f4f7f9;
@@ -39,7 +36,7 @@
       line-height: 1.6;
     }
 
-    /* ---------- Layout ---------- */
+    /* ---------- Layout (省略，与你提供的一致) ---------- */
     .container{
       max-width: 1000px;
       margin: 0 auto;
@@ -48,266 +45,127 @@
       display: flex;
       flex-direction: column;
     }
-    .header{
-      text-align: center;
-      margin-bottom: 40px;
-      animation: fadeInDown .8s ease-out;
-    }
-    .header h1{
-      color:#2d3748;
-      font-size: 2.8rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .header p{
-      color:#718096;
-      font-size: 1.1rem;
-      font-weight: 300;
-    }
+    .header{ text-align: center; margin-bottom: 40px; animation: fadeInDown .8s ease-out; }
+    .header h1{ color:#2d3748; font-size: 2.8rem; font-weight: 700; margin-bottom: 10px; }
+    .header p{ color:#718096; font-size: 1.1rem; font-weight: 300; }
 
-    .search-section{
-      background: var(--card);
-      border-radius: var(--radius-lg);
-      padding: 30px;
-      margin-bottom: 30px;
-      box-shadow: var(--shadow);
-      animation: fadeInUp .8s ease-out .2s both;
-    }
-    .search-form{
-      display: flex;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    .search-input{
-      flex: 1;
-      padding: 15px 20px;
-      border: 2px solid var(--line);
-      border-radius: 25px;
-      font-size: 1rem;
-      outline: none;
-      transition: all .3s ease;
-      background:#f8f9fa;
-    }
-    .search-input:focus{
-      border-color: var(--accent);
-      box-shadow: 0 0 15px rgba(0,123,255,.15);
-      background: #fff;
-    }
-    .search-btn{
-      padding: 15px 30px;
-      background: var(--accent);
-      color:#fff;
-      border:0;
-      border-radius:25px;
-      font-size:1rem;
-      font-weight:600;
-      cursor:pointer;
-      transition:all .3s ease;
-      position: relative;
-      overflow: hidden;
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-    }
+    .search-section{ background: var(--card); border-radius: var(--radius-lg); padding: 30px; margin-bottom: 30px; box-shadow: var(--shadow); animation: fadeInUp .8s ease-out .2s both; }
+    .search-form{ display: flex; gap: 15px; margin-bottom: 20px; }
+    .search-input{ flex: 1; padding: 15px 20px; border: 2px solid var(--line); border-radius: 25px; font-size: 1rem; outline: none; transition: all .3s ease; background:#f8f9fa; }
+    .search-input:focus{ border-color: var(--accent); box-shadow: 0 0 15px rgba(0,123,255,.15); background: #fff; }
+    .search-btn{ padding: 15px 30px; background: var(--accent); color:#fff; border:0; border-radius:25px; font-size:1rem; font-weight:600; cursor:pointer; transition:all .3s ease; position: relative; overflow: hidden; display:inline-flex; align-items:center; gap:10px; }
     .search-btn:hover{ transform: translateY(-2px); background: var(--accent-600); box-shadow: 0 6px 20px rgba(0,123,255,.2); }
     .search-btn:active{ transform: translateY(0); }
     .search-btn:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
-    .loading-spinner{
-      width: 18px; height: 18px; border: 2px solid transparent; border-top:2px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; display:none;
-    }
+    .loading-spinner{ width: 18px; height: 18px; border: 2px solid transparent; border-top:2px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; display:none; }
     .loading-text{ display:none; color: var(--muted); text-align:center; margin-top:12px; animation: pulse 2s infinite; }
 
-    .result-section{
-      background: var(--card);
-      border-radius: var(--radius-lg);
-      padding: 30px;
-      box-shadow: var(--shadow);
-      animation: fadeInUp .6s ease-out;
-      display: none;
-    }
+    .result-section{ background: var(--card); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--shadow); animation: fadeInUp .6s ease-out; display: none; }
+    .question{ background: var(--blue-50); color:#0366d6; padding: 16px 20px; border-radius: 12px; margin-bottom: 18px; font-size: 1.05rem; font-weight: 500; border-left: 5px solid var(--accent); word-break: break-word; }
 
-    .question{
-      background: var(--blue-50);
-      color:#0366d6;
-      padding: 16px 20px;
-      border-radius: 12px;
-      margin-bottom: 18px;
-      font-size: 1.05rem;
-      font-weight: 500;
-      border-left: 5px solid var(--accent);
-      word-break: break-word;
-    }
-
-    /* ---------- Conclusion Card ---------- */
-    .conclusion-wrap{
-      position: sticky;
-      top: 10px;
-      z-index: 5; /* 仍然可浮，但低于 tooltip-root 的 99999 */
-      margin-bottom: 18px;
-    }
-    .conclusion-card{
-      display:flex; align-items:center; gap:14px;
-      padding: 14px 16px;
-      border-radius: 14px;
-      border-left: 6px solid var(--accent);
-      background: var(--amber-50);
-      box-shadow: 0 6px 18px rgba(0,0,0,.05);
-    }
+    /* ---------- Conclusion Card (省略，与你提供的一致) ---------- */
+    .conclusion-wrap{ position: sticky; top: 10px; z-index: 5; margin-bottom: 18px; }
+    .conclusion-card{ display:flex; align-items:center; gap:14px; padding: 14px 16px; border-radius: 14px; border-left: 6px solid var(--accent); background: var(--amber-50); box-shadow: 0 6px 18px rgba(0,0,0,.05); }
     .conclusion-card[data-type="choice"]{ background: var(--blue-50); border-left-color: var(--accent); }
     .conclusion-card[data-type="correct"]{ background: var(--green-50); border-left-color: var(--green-600); }
     .conclusion-card[data-type="wrong"]{ background: var(--red-50); border-left-color: var(--red-600); }
     .conclusion-card[data-type="summary"]{ background: var(--amber-50); border-left-color: var(--amber-600); }
-    .conclusion-chip{
-      display:inline-flex; align-items:center; justify-content:center;
-      min-width: 40px; height: 40px; padding: 0 10px;
-      border-radius: 999px;
-      font-weight: 800; letter-spacing: .5px;
-      background:#fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,.06);
-    }
+    .conclusion-chip{ display:inline-flex; align-items:center; justify-content:center; min-width: 40px; height: 40px; padding: 0 10px; border-radius: 999px; font-weight: 800; letter-spacing: .5px; background:#fff; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
     .conclusion-meta{ display:flex; flex-direction:column; gap:2px; }
     .conclusion-label{ font-size:.9rem; color: var(--muted); }
-    .conclusion-value{
-      font-size:1.15rem; font-weight:700; color: var(--fg);
-      word-break: break-word;
-    }
+    .conclusion-value{ font-size:1.15rem; font-weight:700; color: var(--fg); word-break: break-word; }
     .conclusion-actions{ margin-left:auto; display:flex; gap:8px; }
-    .icon-btn{
-      border:1px solid var(--line); background:#fff; border-radius: 10px; padding:8px 10px;
-      cursor:pointer; font-size:.9rem; color: var(--fg-sub);
-      transition: all .2s ease;
-    }
+    .icon-btn{ border:1px solid var(--line); background:#fff; border-radius: 10px; padding:8px 10px; cursor:pointer; font-size:.9rem; color: var(--fg-sub); transition: all .2s ease; }
     .icon-btn:hover{ transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.06); }
 
-    /* ---------- Answer List ---------- */
+    /* ---------- Answer List (省略，与你提供的一致) ---------- */
     .answer-content{ margin-top: 12px; margin-bottom: 26px; }
-    .sentence{
-      margin-bottom: 12px;
-      padding: 14px 16px;
-      background: #f8f9fa;
-      border-radius: var(--radius-md);
-      border-left: 4px solid var(--accent);
-      transition: all .2s ease;
-      position: relative;
-    }
+    .sentence{ margin-bottom: 12px; padding: 14px 16px; background: #f8f9fa; border-radius: var(--radius-md); border-left: 4px solid var(--accent); transition: all .2s ease; position: relative; }
     .sentence:hover{ background:#f1f3f5; transform: translateX(4px); }
     .sentence-text{ font-size: 1rem; line-height: 1.8; white-space: pre-wrap; word-break: break-word; }
-
-    /* superscript citation */
     sup{ line-height: 1; }
-    .citation{
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: .8rem; font-weight: 600;
-      color: var(--accent);
-      background: var(--blue-50);
-      border-radius: 4px; padding: 2px 6px; margin: 0 2px;
-      cursor: pointer; transition: all .2s ease;
-      text-decoration: none; position: relative; top: -2px;
-    }
+    .citation{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: .8rem; font-weight: 600; color: var(--accent); background: var(--blue-50); border-radius: 4px; padding: 2px 6px; margin: 0 2px; cursor: pointer; transition: all .2s ease; text-decoration: none; position: relative; top: -2px; }
     .citation:hover{ background: var(--accent); color:#fff; transform: scale(1.05); }
 
-    /* ---------- Global Tooltip Portal ---------- */
-    .tooltip-root{
-      position: fixed;
-      inset: 0;
-      pointer-events: none; /* 不拦截交互 */
-      z-index: 99999;      /* 高于结论卡片 */
-    }
-    .tooltip{
-      position: fixed; /* 相对视口定位，避免局部堆叠上下文 */
-      background:#2d3748; color:#fff;
-      padding: 14px;
-      border-radius: 10px;
-      font-size:.9rem; line-height: 1.5;
-      max-width: 420px; width: max-content;
-      box-shadow: 0 8px 25px rgba(0,0,0,.2);
-      opacity: 0; visibility: hidden;
-      transform: translateY(-2px);
-      transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
-      pointer-events: none;
-    }
+    /* ---------- Global Tooltip Portal (省略，与你提供的一致) ---------- */
+    .tooltip-root{ position: fixed; inset: 0; pointer-events: none; z-index: 99999; }
+    .tooltip{ position: fixed; background:#2d3748; color:#fff; padding: 14px; border-radius: 10px; font-size:.9rem; line-height: 1.5; max-width: 420px; width: max-content; box-shadow: 0 8px 25px rgba(0,0,0,.2); opacity: 0; visibility: hidden; transform: translateY(-2px); transition: opacity .18s ease, transform .18s ease, visibility .18s ease; pointer-events: none; }
     .tooltip.show{ opacity: 1; visibility: visible; transform: translateY(0); }
+    .tooltip::after{ content: ''; position: absolute; left: 50%; transform: translateX(-50%); border: 8px solid transparent; }
+    .tooltip[data-placement="top"]::after{ top: 100%; border-top-color:#2d3748; }
+    .tooltip[data-placement="bottom"]::after{ bottom: 100%; border-bottom-color:#2d3748; }
 
-    .tooltip::after{
-      content: '';
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      border: 8px solid transparent;
-    }
-    .tooltip[data-placement="top"]::after{
-      top: 100%;
-      border-top-color:#2d3748;
-    }
-    .tooltip[data-placement="bottom"]::after{
-      bottom: 100%;
-      border-bottom-color:#2d3748;
-    }
-
-    /* evidence */
+    /* evidence (省略，与你提供的一致) */
     .evidence-section{ margin-top: 22px; padding-top: 18px; border-top: 2px dashed var(--line); }
-    .evidence-title{
-      font-size: 1.1rem; font-weight: 600; color: var(--fg-sub);
-      margin-bottom: 12px; display:flex; align-items:center; gap:10px;
-    }
+    .evidence-title{ font-size: 1.1rem; font-weight: 600; color: var(--fg-sub); margin-bottom: 12px; display:flex; align-items:center; gap:10px; }
     .evidence-title::before{ content:'📚'; font-size: 1.2rem; }
-    .evidence-list{
-      display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
-      gap: 10px;
-    }
-    .evidence-item{
-      background:#fff; border:1px solid var(--line); padding: 10px 14px; border-radius:10px;
-      font-size: .92rem; font-weight:500; color: var(--fg-sub); text-align:center;
-      transition: all .2s ease; cursor:pointer;
-    }
+    .evidence-list{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 10px; }
+    .evidence-item{ background:#fff; border:1px solid var(--line); padding: 10px 14px; border-radius:10px; font-size: .92rem; font-weight:500; color: var(--fg-sub); text-align:center; transition: all .2s ease; cursor:pointer; }
     .evidence-item:hover{ transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,.08); border-color: var(--accent); color: var(--accent); }
 
-    /* error */
-    .error-message{
-      background:#f8d7da; color:#721c24; border:1px solid #f5c6cb;
-      padding:20px; border-radius:12px; margin-top:20px; font-weight:500; display:none;
-    }
+    /* error (省略，与你提供的一致) */
+    .error-message{ background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:20px; border-radius:12px; margin-top:20px; font-weight:500; display:none; }
 
-    /* modal */
-    .modal{ position: fixed; inset: 0; background: rgba(0,0,0,.6);
-      display:flex; align-items:center; justify-content:center; z-index: 2000;
-      opacity:0; visibility:hidden; transition: all .3s ease; }
+    /* modal (省略，与你提供的一致) */
+    .modal{ position: fixed; inset: 0; background: rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index: 2000; opacity:0; visibility:hidden; transition: all .3s ease; }
     .modal.show{ opacity:1; visibility: visible; }
-    .modal-content{
-      background:#fff; padding: 28px 34px; border-radius: 20px; max-width: 760px; width: 92%;
-      max-height: 82vh; overflow-y: auto; position:relative; box-shadow: 0 15px 40px rgba(0,0,0,.2);
-      transform: scale(.95); transition: all .3s ease;
-    }
+    .modal-content{ background:#fff; padding: 28px 34px; border-radius: 20px; max-width: 760px; width: 92%; max-height: 82vh; overflow-y: auto; position:relative; box-shadow: 0 15px 40px rgba(0,0,0,.2); transform: scale(.95); transition: all .3s ease; }
     .modal.show .modal-content{ transform: scale(1); }
-    .modal-close-btn{
-      position:absolute; top: 12px; right: 18px; font-size: 2rem; font-weight:300; color:#999;
-      cursor:pointer; line-height:1; transition: all .2s ease;
-    }
+    .modal-close-btn{ position:absolute; top: 12px; right: 18px; font-size: 2rem; font-weight:300; color:#999; cursor:pointer; line-height:1; transition: all .2s ease; }
     .modal-close-btn:hover{ color:#333; transform: rotate(90deg); }
-    .modal-title{
-      font-size: 1.3rem; font-weight: 700; color:#333; margin-bottom: 12px;
-      padding-bottom: 12px; border-bottom: 1px solid #eee;
-    }
+    .modal-title{ font-size: 1.3rem; font-weight: 700; color:#333; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
     .modal-body{ font-size: 1rem; line-height: 1.8; color: var(--fg-sub); word-break: break-word; }
     .modal-body strong{ color: var(--fg); }
     .modal-body em{ color: #555; font-style: italic; }
 
-    /* animations */
+    /* animations (省略，与你提供的一致) */
     @keyframes fadeInDown{ from{opacity:0; transform: translateY(-30px);} to{opacity:1; transform: translateY(0);} }
     @keyframes fadeInUp{ from{opacity:0; transform: translateY(30px);} to{opacity:1; transform: translateY(0);} }
     @keyframes spin{ to{ transform: rotate(360deg);} }
     @keyframes pulse{ 0%,100{opacity:1;} 50%{opacity:.7;} }
 
-    /* responsive */
-    @media (max-width:768px){
-      .container{ padding: 15px; }
-      .header h1{ font-size: 2.2rem; }
-      .search-form{ flex-direction: column; }
-      .search-btn{ align-self: stretch; justify-content:center; }
-      .evidence-list{ grid-template-columns: 1fr; }
-      .modal-content{ width: 95%; padding: 24px; }
-      .conclusion-card{ flex-wrap: wrap; gap:10px; }
-      .conclusion-actions{ width: 100%; justify-content: flex-end; }
+    /* responsive (省略，与你提供的一致) */
+    @media (max-width:768px){ .container{ padding: 15px; } .header h1{ font-size: 2.2rem; } .search-form{ flex-direction: column; } .search-btn{ align-self: stretch; justify-content:center; } .evidence-list{ grid-template-columns: 1fr; } .modal-content{ width: 95%; padding: 24px; } .conclusion-card{ flex-wrap: wrap; gap:10px; } .conclusion-actions{ width: 100%; justify-content: flex-end; } }
+
+    /* 角落绶带 (省略，与你提供的一致) */
+    .corner-ribbon { position: fixed; top: 14px; right: -60px; transform: rotate(45deg); z-index: 99990; display: inline-block; padding: 12px 68px; background: var(--accent, #007bff); color: #fff; font-weight: 800; letter-spacing: .5px; text-decoration: none; text-transform: uppercase; border: 0; box-shadow: 0 6px 20px rgba(0,0,0,.15); }
+    .corner-ribbon { background-image: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,0)); background-blend-mode: overlay; }
+    .corner-ribbon:hover { background-color: var(--accent-600, #0069d9); box-shadow: 0 10px 24px rgba(0,0,0,.18); }
+    @media (max-width: 768px) { .corner-ribbon { top: 10px; right: -66px; transform: rotate(45deg) scale(0.9); padding: 10px 58px; font-size: .92rem; } }
+    .corner-ribbon.left { left: -60px; right: auto; transform: rotate(-45deg); }
+
+    /* ===== 新增：Token 设置图标与弹窗 ===== */
+    .token-btn {
+      position: fixed;
+      top: 15px; left: 15px;
+      width: 44px; height: 44px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      cursor: pointer;
+      z-index: 99990;
+      box-shadow: 0 4px 15px rgba(0,0,0,.08);
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s ease;
+    }
+    .token-btn:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 6px 20px rgba(0,0,0,.1); }
+    .token-btn svg { width: 22px; height: 22px; color: var(--fg-sub); }
+
+    .token-modal .modal-body {
+      display: flex; flex-direction: column; gap: 15px;
+    }
+    .token-modal-input {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+    }
+    .token-modal-btn {
+      padding: 12px;
+      background: var(--accent); color: #fff;
+      border: 0; border-radius: var(--radius-sm);
+      cursor: pointer;
     }
   </style>
 </head>
@@ -320,14 +178,7 @@
 
     <div class="search-section">
       <form class="search-form" id="searchForm">
-        <input
-          type="text"
-          class="search-input"
-          id="queryInput"
-          placeholder="请输入您的问题，例如：考核开始几分钟后不能进考场？"
-          required
-          autocomplete="on"
-        />
+        <input type="text" class="search-input" id="queryInput" placeholder="请输入您的问题，例如：考核开始几分钟后不能进考场？" required autocomplete="on" />
         <button type="submit" class="search-btn" id="searchBtn" aria-live="polite">
           <span class="btn-text">搜索答案</span>
           <div class="loading-spinner" id="loadingSpinner"></div>
@@ -338,8 +189,6 @@
 
     <div class="result-section" id="resultSection" aria-live="polite">
       <div class="question" id="questionDisplay"></div>
-
-      <!-- Conclusion -->
       <div class="conclusion-wrap" id="conclusionWrap" style="display:none;">
         <div class="conclusion-card" id="conclusionCard" data-type="summary">
           <div class="conclusion-chip" id="conclusionChip">—</div>
@@ -353,15 +202,12 @@
           </div>
         </div>
       </div>
-
       <div class="answer-content" id="answerContent"></div>
-
       <div class="evidence-section">
         <div class="evidence-title">参考资料</div>
         <div class="evidence-list" id="evidenceList"></div>
       </div>
     </div>
-
     <div class="error-message" id="errorMessage"></div>
   </div>
 
@@ -376,6 +222,14 @@
 
   <!-- Global tooltip portal root -->
   <div id="tooltip-root" class="tooltip-root" aria-hidden="true"></div>
+
+  <!-- 右上角 GitHub -->
+  <a class="corner-ribbon" href="https://github.com/CodeBoy2006/llm-handbook-qa" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看本项目">GitHub</a>
+
+  <!-- 左上角 Token 设置 -->
+  <button class="token-btn" id="tokenBtn" title="设置 API Token">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" /></svg>
+  </button>
 
   <script>
     class HandbookQA {
@@ -411,6 +265,10 @@
 
         // Data
         this.chunkMap = {};
+        this.apiToken = this.getToken();
+
+        // Auth UI
+        this.tokenBtn = document.getElementById('tokenBtn');
 
         this.init();
       }
@@ -420,20 +278,17 @@
           e.preventDefault();
           this.handleSearch();
         });
-
         this.queryInput.addEventListener('keypress', (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
             this.handleSearch();
           }
         });
-
         this.modalCloseBtn.addEventListener('click', () => this.hideModal());
         this.modal.addEventListener('click', (e) => { if (e.target === this.modal) this.hideModal(); });
         document.addEventListener('keydown', (e) => {
           if (e.key === 'Escape' && this.modal.classList.contains('show')) this.hideModal();
         });
-
         this.copyConclusionBtn.addEventListener('click', () => {
           const txt = this.conclusionValue.textContent.trim();
           if (!txt) return;
@@ -443,27 +298,75 @@
             this.flashButton(this.copyConclusionBtn, '复制失败');
           });
         });
-
         this.showConclusionDetailBtn.addEventListener('click', () => {
           this.showModal('结论释义', `
             <p><strong>结论</strong>为模型基于《学生手册》片段做出的直接答案。</p>
             <p>若为选择题，通常显示为 <strong>A/B/C/…</strong>；若为判断题，显示为<strong>正确/错误</strong>；一般性问题会显示简短摘要或可能为空。</p>
           `);
         });
-
-        // 当窗口变化或滚动时，隐藏可能残留的 tooltip
         window.addEventListener('scroll', () => this.hideAllTooltips(), { passive: true });
         window.addEventListener('resize', () => this.hideAllTooltips());
+
+        // Auth
+        this.tokenBtn.addEventListener('click', () => this.showTokenModal());
+        if (!this.apiToken) {
+          this.showTokenModal();
+        }
+      }
+
+      /* ==================== 鉴权核心 ==================== */
+      getToken() { return localStorage.getItem('API_TOKEN'); }
+      setToken(token) {
+        this.apiToken = token;
+        localStorage.setItem('API_TOKEN', token);
+      }
+      clearToken() {
+        this.apiToken = null;
+        localStorage.removeItem('API_TOKEN');
+      }
+
+      showTokenModal() {
+        const modalBody = `
+          <p>请输入您的 API Token (通行证)，它将被保存在您的浏览器本地。</p>
+          <input type="password" id="tokenInput" class="token-modal-input" placeholder="tok_..." value="${this.getToken() || ''}">
+          <button id="saveTokenBtn" class="token-modal-btn">保存并关闭</button>
+        `;
+        this.showModal('设置 API Token', modalBody);
+        this.modal.classList.add('token-modal');
+
+        const input = document.getElementById('tokenInput');
+        const saveBtn = document.getElementById('saveTokenBtn');
+        input.focus();
+        saveBtn.onclick = () => {
+          const val = input.value.trim();
+          if (val) {
+            this.setToken(val);
+            this.hideModal();
+          }
+        };
+        input.onkeypress = (e) => { if (e.key === 'Enter') saveBtn.click(); };
       }
 
       async handleSearch() {
+        if (!this.apiToken) {
+          this.showTokenModal();
+          return;
+        }
         const query = this.queryInput.value.trim();
         if (!query) return;
         this.showLoading(); this.hideError();
 
         try {
           const url = `/answer?q=${encodeURIComponent(query)}`;
-          const response = await fetch(url);
+          const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${this.apiToken}` }
+          });
+
+          if (response.status === 401 || response.status === 403) {
+            this.clearToken();
+            this.showTokenModal();
+            throw new Error('无效的 Token，请重新输入');
+          }
           if (!response.ok) {
             const msg = response.status === 404 ? '未检索到相关内容' : `HTTP ${response.status}: ${response.statusText}`;
             throw new Error(msg);
@@ -477,231 +380,59 @@
           this.hideLoading();
         }
       }
+      /* ================================================ */
 
-      showLoading() {
-        this.searchBtn.disabled = true;
-        this.searchBtn.querySelector('.btn-text').style.display = 'none';
-        this.loadingSpinner.style.display = 'block';
-        this.loadingText.style.display = 'block';
-        this.resultSection.style.display = 'none';
+      showLoading() { /* ... (与你提供的一致) */
+        this.searchBtn.disabled = true; this.searchBtn.querySelector('.btn-text').style.display = 'none'; this.loadingSpinner.style.display = 'block'; this.loadingText.style.display = 'block'; this.resultSection.style.display = 'none';
       }
-      hideLoading() {
-        this.searchBtn.disabled = false;
-        this.searchBtn.querySelector('.btn-text').style.display = 'block';
-        this.loadingSpinner.style.display = 'none';
-        this.loadingText.style.display = 'none';
+      hideLoading() { /* ... (与你提供的一致) */
+        this.searchBtn.disabled = false; this.searchBtn.querySelector('.btn-text').style.display = 'block'; this.loadingSpinner.style.display = 'none'; this.loadingText.style.display = 'none';
       }
-
-      displayResults(data) {
-        const answer = this.normalizeAnswerShape(data?.answer);
-        this.chunkMap = data?.chunk_map || {};
-        this.questionDisplay.textContent = data?.query || '';
-
-        this.renderConclusion(answer?.conclusion);
-        this.renderAnswerList(answer?.answer_list);
-        this.renderEvidence(data?.evidence || []);
-
-        this.resultSection.style.display = 'block';
-        setTimeout(() => this.resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+      displayResults(data) { /* ... (与你提供的一致) */
+        const answer = this.normalizeAnswerShape(data?.answer); this.chunkMap = data?.chunk_map || {}; this.questionDisplay.textContent = data?.query || ''; this.renderConclusion(answer?.conclusion); this.renderAnswerList(answer?.answer_list); this.renderEvidence(data?.evidence || []); this.resultSection.style.display = 'block'; setTimeout(() => this.resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
       }
-
-      /* ---------- Conclusion ---------- */
-      renderConclusion(conclusionRaw) {
-        const c = (conclusionRaw ?? '').toString().trim();
-        const classified = this.classifyConclusion(c);
-
-        this.conclusionWrap.style.display = 'block';
-        this.conclusionCard.setAttribute('data-type', classified.type);
-        this.conclusionValue.textContent = c || '未给出明确结论';
-        this.conclusionChip.textContent = classified.chip;
-        this.conclusionCard.title = `类型：${classified.typeLabel}`;
+      renderConclusion(conclusionRaw) { /* ... (与你提供的一致) */
+        const c = (conclusionRaw ?? '').toString().trim(); const classified = this.classifyConclusion(c); this.conclusionWrap.style.display = 'block'; this.conclusionCard.setAttribute('data-type', classified.type); this.conclusionValue.textContent = c || '未给出明确结论'; this.conclusionChip.textContent = classified.chip; this.conclusionCard.title = `类型：${classified.typeLabel}`;
       }
-
-      classifyConclusion(text) {
-        if (!text) return { type: 'summary', chip: '—', typeLabel: '无/摘要' };
-
-        const t = text.replace(/\s+/g,'').toUpperCase();
-        const positive = ['正确','对','是','YES','TRUE'].includes(text) || ['√','✔️','✅'].includes(text);
-        const negative = ['错误','否','NO','FALSE'].includes(text) || ['×','❌'].includes(text);
-
-        if (positive) return { type:'correct', chip:'✓', typeLabel:'判断题 · 正确' };
-        if (negative) return { type:'wrong', chip:'✗', typeLabel:'判断题 · 错误' };
-        if (/^[A-J]$/.test(t)) return { type:'choice', chip:t, typeLabel:'选择题' };
-        if (/^\d+$/.test(t)) return { type:'choice', chip:t, typeLabel:'选择题（数字）' };
-        return { type:'summary', chip:'ℹ︎', typeLabel:'摘要/其他' };
+      classifyConclusion(text) { /* ... (与你提供的一致) */
+        if (!text) return { type: 'summary', chip: '—', typeLabel: '无/摘要' }; const t = text.replace(/\s+/g,'').toUpperCase(); const positive = ['正确','对','是','YES','TRUE'].includes(text) || ['√','✔️','✅'].includes(text); const negative = ['错误','否','NO','FALSE'].includes(text) || ['×','❌'].includes(text); if (positive) return { type:'correct', chip:'✓', typeLabel:'判断题 · 正确' }; if (negative) return { type:'wrong', chip:'✗', typeLabel:'判断题 · 错误' }; if (/^[A-J]$/.test(t)) return { type:'choice', chip:t, typeLabel:'选择题' }; if (/^\d+$/.test(t)) return { type:'choice', chip:t, typeLabel:'选择题（数字）' }; return { type:'summary', chip:'ℹ︎', typeLabel:'摘要/其他' };
       }
-
-      /* ---------- Answer List ---------- */
-      renderAnswerList(answerList) {
-        this.answerContent.innerHTML = '';
-        const list = Array.isArray(answerList) ? answerList : [];
-        if (!list.length) {
-          this.answerContent.innerHTML = `<div class="sentence"><div class="sentence-text">未找到相关信息</div></div>`;
-          return;
-        }
-
-        list.forEach((item, idx) => {
-          const sentence = (item?.sentence ?? item?.text ?? '').toString();
-          const cits = Array.isArray(item?.citations) ? item.citations : [];
-
-          const sentenceDiv = document.createElement('div');
-          sentenceDiv.className = 'sentence';
-          sentenceDiv.style.animationDelay = `${idx * 0.06}s`;
-
-          const textDiv = document.createElement('div');
-          textDiv.className = 'sentence-text';
-          textDiv.appendChild(document.createTextNode(sentence));
-
-          if (cits.length) {
-            textDiv.appendChild(document.createTextNode(' '));
-            cits.forEach((cid, i) => {
-              const sup = document.createElement('sup');
-              const span = document.createElement('span');
-              span.className = 'citation';
-              span.textContent = `[${cid}]`;
-              span.dataset.citationId = cid;
-              sup.appendChild(span);
-              textDiv.appendChild(sup);
-              if (i < cits.length - 1) textDiv.appendChild(document.createTextNode(' '));
-            });
-          }
-
-          sentenceDiv.appendChild(textDiv);
-          this.answerContent.appendChild(sentenceDiv);
-        });
-
-        // Tooltips
-        this.answerContent.querySelectorAll('.citation').forEach(el => {
-          const cid = el.dataset.citationId;
-          el.addEventListener('mouseenter', (e) => this.showTooltip(e, cid));
-          el.addEventListener('mouseleave', (e) => this.hideAllTooltips());
-          el.addEventListener('click', () => this.showChunkDetails(cid));
-        });
+      renderAnswerList(answerList) { /* ... (与你提供的一致) */
+        this.answerContent.innerHTML = ''; const list = Array.isArray(answerList) ? answerList : []; if (!list.length) { this.answerContent.innerHTML = `<div class="sentence"><div class="sentence-text">未找到相关信息</div></div>`; return; } list.forEach((item, idx) => { const sentence = (item?.sentence ?? item?.text ?? '').toString(); const cits = Array.isArray(item?.citations) ? item.citations : []; const sentenceDiv = document.createElement('div'); sentenceDiv.className = 'sentence'; sentenceDiv.style.animationDelay = `${idx * 0.06}s`; const textDiv = document.createElement('div'); textDiv.className = 'sentence-text'; textDiv.appendChild(document.createTextNode(sentence)); if (cits.length) { textDiv.appendChild(document.createTextNode(' ')); cits.forEach((cid, i) => { const sup = document.createElement('sup'); const span = document.createElement('span'); span.className = 'citation'; span.textContent = `[${cid}]`; span.dataset.citationId = cid; sup.appendChild(span); textDiv.appendChild(sup); if (i < cits.length - 1) textDiv.appendChild(document.createTextNode(' ')); }); } sentenceDiv.appendChild(textDiv); this.answerContent.appendChild(sentenceDiv); }); this.answerContent.querySelectorAll('.citation').forEach(el => { const cid = el.dataset.citationId; el.addEventListener('mouseenter', (e) => this.showTooltip(e, cid)); el.addEventListener('mouseleave', (e) => this.hideAllTooltips()); el.addEventListener('click', () => this.showChunkDetails(cid)); });
       }
-
-      /* ---------- Evidence ---------- */
-      renderEvidence(evidenceArr) {
-        this.evidenceList.innerHTML = '';
-        if (!Array.isArray(evidenceArr) || !evidenceArr.length) return;
-
-        const unique = [...new Set(evidenceArr.map(x => x?.chunk_id).filter(Boolean))];
-        unique.forEach(cid => {
-          const div = document.createElement('div');
-          div.className = 'evidence-item';
-          div.textContent = `资料片段 ${cid}`;
-          div.addEventListener('click', () => this.showChunkDetails(cid));
-          this.evidenceList.appendChild(div);
-        });
+      renderEvidence(evidenceArr) { /* ... (与你提供的一致) */
+        this.evidenceList.innerHTML = ''; if (!Array.isArray(evidenceArr) || !evidenceArr.length) return; const unique = [...new Set(evidenceArr.map(x => x?.chunk_id).filter(Boolean))]; unique.forEach(cid => { const div = document.createElement('div'); div.className = 'evidence-item'; div.textContent = `资料片段 ${cid}`; div.addEventListener('click', () => this.showChunkDetails(cid)); this.evidenceList.appendChild(div); });
       }
-
-      /* ---------- Tooltip Portal ---------- */
-      createTooltipRoot() {
-        const el = document.createElement('div');
-        el.id = 'tooltip-root';
-        el.className = 'tooltip-root';
-        document.body.appendChild(el);
-        return el;
+      createTooltipRoot() { /* ... (与你提供的一致) */
+        const el = document.createElement('div'); el.id = 'tooltip-root'; el.className = 'tooltip-root'; document.body.appendChild(el); return el;
       }
-
-      showTooltip(event, citationId) {
-        this.hideAllTooltips();
-
-        const content = this.chunkMap?.[citationId];
-        if (!content) return;
-
-        const truncated = content.length > 280 ? content.slice(0, 280) + '…' : content;
-        const tip = document.createElement('div');
-        tip.className = 'tooltip';
-        tip.innerHTML = this.formatText(truncated);
-        this.tooltipRoot.appendChild(tip);
-
-        const anchor = event.target; // .citation span
-        const r = anchor.getBoundingClientRect();
-
-        // 先渲染一次拿到尺寸
-        const tipRect = tip.getBoundingClientRect();
-
-        // 期望放“上方”，不够就放“下方”
-        let placement = 'top';
-        let top = r.top - tipRect.height - 10;
-        if (top < 8) { placement = 'bottom'; top = r.bottom + 10; }
-
-        // 水平居中，避免越界
-        let left = r.left + r.width / 2 - tipRect.width / 2;
-        const gutter = 8;
-        left = Math.max(gutter, Math.min(left, window.innerWidth - tipRect.width - gutter));
-
-        tip.style.top = `${Math.round(top)}px`;
-        tip.style.left = `${Math.round(left)}px`;
-        tip.setAttribute('data-placement', placement);
-
-        requestAnimationFrame(() => tip.classList.add('show'));
+      showTooltip(event, citationId) { /* ... (与你提供的一致) */
+        this.hideAllTooltips(); const content = this.chunkMap?.[citationId]; if (!content) return; const truncated = content.length > 280 ? content.slice(0, 280) + '…' : content; const tip = document.createElement('div'); tip.className = 'tooltip'; tip.innerHTML = this.formatText(truncated); this.tooltipRoot.appendChild(tip); const anchor = event.target; const r = anchor.getBoundingClientRect(); const tipRect = tip.getBoundingClientRect(); let placement = 'top'; let top = r.top - tipRect.height - 10; if (top < 8) { placement = 'bottom'; top = r.bottom + 10; } let left = r.left + r.width / 2 - tipRect.width / 2; const gutter = 8; left = Math.max(gutter, Math.min(left, window.innerWidth - tipRect.width - gutter)); tip.style.top = `${Math.round(top)}px`; tip.style.left = `${Math.round(left)}px`; tip.setAttribute('data-placement', placement); requestAnimationFrame(() => tip.classList.add('show'));
       }
-
-      hideAllTooltips() {
-        const tips = this.tooltipRoot?.querySelectorAll('.tooltip') || [];
-        tips.forEach(t => t.remove());
+      hideAllTooltips() { /* ... (与你提供的一致) */
+        const tips = this.tooltipRoot?.querySelectorAll('.tooltip') || []; tips.forEach(t => t.remove());
       }
-
-      /* ---------- Tooltip & Modal Helpers ---------- */
-      formatText(text) {
-        return text
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-          .replace(/\n/g, '<br>');
+      formatText(text) { /* ... (与你提供的一致) */
+        return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/\n/g, '<br>');
       }
-
-      showChunkDetails(cid) {
-        const content = this.chunkMap?.[cid];
-        if (!content) return;
-        this.showModal(`参考资料：片段 ${cid}`, this.formatText(content));
+      showChunkDetails(cid) { /* ... (与你提供的一致) */
+        const content = this.chunkMap?.[cid]; if (!content) return; this.showModal(`参考资料：片段 ${cid}`, this.formatText(content));
       }
-
-      showModal(title, html) {
-        this.modalTitle.textContent = title;
-        this.modalBody.innerHTML = html;
-        this.modal.classList.add('show');
-        this.modal.setAttribute('aria-hidden','false');
-        document.body.style.overflow = 'hidden';
+      showModal(title, html) { /* ... (与你提供的一致) */
+        this.modalTitle.textContent = title; this.modalBody.innerHTML = html; this.modal.classList.add('show'); this.modal.setAttribute('aria-hidden','false'); document.body.style.overflow = 'hidden';
       }
-      hideModal() {
-        this.modal.classList.remove('show');
-        this.modal.setAttribute('aria-hidden','true');
-        document.body.style.overflow = '';
+      hideModal() { /* ... (与你提供的一致) */
+        this.modal.classList.remove('show'); this.modal.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; this.modal.classList.remove('token-modal'); // 清理弹窗特定样式
       }
-
-      /* ---------- Misc Helpers ---------- */
-      showError(msg) {
-        this.errorMessage.textContent = msg;
-        this.errorMessage.style.display = 'block';
-        this.resultSection.style.display = 'none';
+      showError(msg) { /* ... (与你提供的一致) */
+        this.errorMessage.textContent = msg; this.errorMessage.style.display = 'block'; this.resultSection.style.display = 'none';
       }
       hideError(){ this.errorMessage.style.display = 'none'; }
-      flashButton(btn, text){
-        const orig = btn.textContent;
-        btn.textContent = text;
-        btn.disabled = true;
-        setTimeout(()=>{ btn.textContent = orig; btn.disabled = false; }, 900);
+      flashButton(btn, text){ /* ... (与- (与你提供的一致) */
+        const orig = btn.textContent; btn.textContent = text; btn.disabled = true; setTimeout(()=>{ btn.textContent = orig; btn.disabled = false; }, 900);
       }
-
-      normalizeAnswerShape(answer) {
-        if (!answer || typeof answer !== 'object') return { conclusion: null, answer_list: [] };
-
-        if ('answer_list' in answer || 'conclusion' in answer) {
-          const conclusion = (answer.conclusion ?? null);
-          const list = Array.isArray(answer.answer_list) ? answer.answer_list : [];
-          return { conclusion, answer_list: list };
-        }
-
-        if (Array.isArray(answer.sentences)) {
-          const mapped = answer.sentences.map(s => ({
-            sentence: (s?.text ?? '').toString(),
-            citations: Array.isArray(s?.citations) ? s.citations : [],
-          }));
-          return { conclusion: null, answer_list: mapped };
-        }
-
-        return { conclusion: null, answer_list: [] };
+      normalizeAnswerShape(answer) { /* ... (与你提供的一致) */
+        if (!answer || typeof answer !== 'object') return { conclusion: null, answer_list: [] }; if ('answer_list' in answer || 'conclusion' in answer) { const conclusion = (answer.conclusion ?? null); const list = Array.isArray(answer.answer_list) ? answer.answer_list : []; return { conclusion, answer_list: list }; } if (Array.isArray(answer.sentences)) { const mapped = answer.sentences.map(s => ({ sentence: (s?.text ?? '').toString(), citations: Array.isArray(s?.citations) ? s.citations : [], })); return { conclusion: null, answer_list: mapped }; } return { conclusion: null, answer_list: [] };
       }
     }
 
