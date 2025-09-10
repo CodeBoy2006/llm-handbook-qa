@@ -4,10 +4,11 @@
 import os
 import json
 import hashlib
+import logging
 from typing import List, Dict, Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Query, HTTPException, Depends, Header
+from fastapi import FastAPI, Query, HTTPException, Depends, Header, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -21,6 +22,14 @@ from llama_index.vector_stores.chroma import ChromaVectorStore
 from openai import OpenAI
 from openai import APIConnectionError, RateLimitError, APIStatusError
 
+
+# -------------------- 日志 --------------------
+# 默认 INFO 级别，可用环境变量 LOG_LEVEL 覆盖（如 DEBUG、WARNING）
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s %(levelname)s %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 # -------------------- 环境 --------------------
 load_dotenv()
@@ -75,14 +84,17 @@ bearer_scheme = HTTPBearer(auto_error=False)
 _RAW_TOKENS = {t.strip() for t in os.getenv("API_TOKENS", "").split(",") if t.strip()}
 _RAW_SHA256 = {t.strip() for t in os.getenv("API_TOKENS_SHA256", "").split(",") if t.strip()}
 
+
 def _ok_by_plain(token: str) -> bool:
     return bool(_RAW_TOKENS) and token in _RAW_TOKENS
+
 
 def _ok_by_sha256(token: str) -> bool:
     if not _RAW_SHA256:
         return False
     digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
     return digest in _RAW_SHA256
+
 
 async def require_token(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
@@ -110,6 +122,52 @@ async def require_token(
         return True
 
     raise HTTPException(status_code=403, detail="Invalid token")
+
+
+# ===================== 提取客户端 IP（支持代理） =====================
+def _parse_forwarded(header_val: str | None) -> str | None:
+    """
+    解析 RFC 7239 Forwarded 头，提取 for=<ip>
+    示例：
+      Forwarded: for=203.0.113.60;proto=https;by=203.0.113.43
+      Forwarded: for="[2001:db8:cafe::17]:4711"
+    """
+    if not header_val:
+        return None
+    try:
+        # 可能包含多个条目，用逗号分隔
+        entries = [e.strip() for e in header_val.split(",")]
+        for entry in entries:
+            parts = [p.strip() for p in entry.split(";")]
+            for p in parts:
+                if p.lower().startswith("for="):
+                    v = p.split("=", 1)[1].strip().strip('"')
+                    # 去掉 IPv6 方括号与端口
+                    v = v.lstrip("[").rstrip("]")
+                    v = v.split(":")[0]
+                    return v
+    except Exception:
+        return None
+    return None
+
+
+def get_client_ip(request: Request) -> str:
+    # 优先 X-Forwarded-For（可能是 "client, proxy1, proxy2"）
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    # 次选 X-Real-IP
+    xri = request.headers.get("x-real-ip")
+    if xri:
+        return xri.strip()
+    # 再尝试标准 Forwarded 头
+    fwd = _parse_forwarded(request.headers.get("forwarded"))
+    if fwd:
+        return fwd
+    # 最后回退到 socket
+    return request.client.host if request.client else "unknown"
+
+
 # =================================================================
 
 class QAHit(BaseModel):
@@ -117,9 +175,11 @@ class QAHit(BaseModel):
     text: str
     metadata: Dict[str, Any]
 
+
 class QAResponse(BaseModel):
     query: str
     results: List[QAHit]
+
 
 class GenResponse(BaseModel):
     """
@@ -133,12 +193,15 @@ class GenResponse(BaseModel):
     chunk_map: Dict[str, str]
     evidence: List[Dict[str, Any]]
 
+
 @app.get("/healthz", dependencies=[Depends(require_token)])
 def healthz():
     return {"ok": True}
 
+
 @app.get("/answer", response_model=GenResponse, dependencies=[Depends(require_token)])
 def answer(
+    request: Request,
     q: str = Query(..., description="用户问题"),
     k: int = 5,
     max_tokens: int | None = None,
@@ -148,6 +211,9 @@ def answer(
     先检索，再把片段交给对话模型进行“基于资料的回答”。
     返回结构化 JSON（包含 conclusion 与 answer_list），并附上 chunk_map（chunk_id: 片段内容）供前端标注引用。
     """
+    # —— 仅记录 IP 与问题文本（不记录任何密钥/头信息/完整请求体）——
+    logger.info("[answer] ip=%s q=%s", get_client_ip(request), q)
+
     retriever.similarity_top_k = k
     nodes = retriever.retrieve(q)
     if not nodes:
@@ -305,8 +371,12 @@ def answer(
         "evidence": evidence,
     }
 
+
 @app.get("/query", response_model=QAResponse, dependencies=[Depends(require_token)])
-def query(q: str = Query(..., description="检索问题"), k: int = 5):
+def query(request: Request, q: str = Query(..., description="检索问题"), k: int = 5):
+    # —— 仅记录 IP 与问题文本（不记录任何密钥/头信息/完整请求体）——
+    logger.info("[query]  ip=%s q=%s", get_client_ip(request), q)
+
     retriever.similarity_top_k = k
     nodes = retriever.retrieve(q)
     results = [
@@ -318,6 +388,7 @@ def query(q: str = Query(..., description="检索问题"), k: int = 5):
         for n in nodes
     ]
     return {"query": q, "results": results}
+
 
 # -------------------- 静态前端（务必放在路由之后） --------------------
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

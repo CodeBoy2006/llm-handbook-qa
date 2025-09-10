@@ -125,9 +125,18 @@
     @keyframes pulse{ 0%,100{opacity:1;} 50%{opacity:.7;} }
 
     /* responsive (省略，与你提供的一致) */
-    @media (max-width:768px){ .container{ padding: 15px; } .header h1{ font-size: 2.2rem; } .search-form{ flex-direction: column; } .search-btn{ align-self: stretch; justify-content:center; } .evidence-list{ grid-template-columns: 1fr; } .modal-content{ width: 95%; padding: 24px; } .conclusion-card{ flex-wrap: wrap; gap:10px; } .conclusion-actions{ width: 100%; justify-content: flex-end; } }
+    @media (max-width:768px){
+      .container{ padding: 15px; }
+      .header h1{ font-size: 2.2rem; }
+      .search-form{ flex-direction: column; }
+      .search-btn{ align-self: stretch; justify-content:center; }
+      .evidence-list{ grid-template-columns: 1fr; }
+      .modal-content{ width: 95%; padding: 24px; }
+      .conclusion-card{ flex-wrap: wrap; gap:10px; }
+      .conclusion-actions{ width: 100%; justify-content: flex-end; }
+    }
 
-    /* 角落绶带 (省略，与你提供的一致) */
+    /* 角落绶带 (更新文案为“⭐ Star”) */
     .corner-ribbon { position: fixed; top: 14px; right: -60px; transform: rotate(45deg); z-index: 99990; display: inline-block; padding: 12px 68px; background: var(--accent, #007bff); color: #fff; font-weight: 800; letter-spacing: .5px; text-decoration: none; text-transform: uppercase; border: 0; box-shadow: 0 6px 20px rgba(0,0,0,.15); }
     .corner-ribbon { background-image: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,0)); background-blend-mode: overlay; }
     .corner-ribbon:hover { background-color: var(--accent-600, #0069d9); box-shadow: 0 10px 24px rgba(0,0,0,.18); }
@@ -166,6 +175,47 @@
       background: var(--accent); color: #fff;
       border: 0; border-radius: var(--radius-sm);
       cursor: pointer;
+    }
+
+    /* ===== 新增：作者信息与 Star 按钮样式 ===== */
+    .footer{
+      margin-top: 32px;
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+    .footer .author{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      font-size: .98rem;
+    }
+    .footer .author a{
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .footer .sep { margin: 0 6px; color: #c0c6d1; }
+    .footer .star-btn{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--accent);
+      font-weight: 800;
+      text-decoration: none;
+      transition: all .2s ease;
+    }
+    .footer .star-btn:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(0,0,0,.06);
+      border-color: var(--accent);
     }
   </style>
 </head>
@@ -209,6 +259,19 @@
       </div>
     </div>
     <div class="error-message" id="errorMessage"></div>
+
+    <!-- ===== 新增：作者信息与 Star CTA ===== -->
+    <footer class="footer" role="contentinfo" aria-label="作者与项目信息">
+      <div class="author">
+        <span>作者：</span>
+        <a href="https://github.com/CodeBoy2006" target="_blank" rel="noopener noreferrer">Codeboy</a>
+        <span class="sep">·</span>
+        <span>如果这个项目对你有帮助，欢迎在 GitHub 点个 ⭐️</span>
+        <a class="star-btn" href="https://github.com/CodeBoy2006/llm-handbook-qa" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 为本项目加星">
+          ⭐ Star 本项目
+        </a>
+      </div>
+    </footer>
   </div>
 
   <!-- Modal -->
@@ -224,7 +287,7 @@
   <div id="tooltip-root" class="tooltip-root" aria-hidden="true"></div>
 
   <!-- 右上角 GitHub -->
-  <a class="corner-ribbon" href="https://github.com/CodeBoy2006/llm-handbook-qa" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 查看本项目">GitHub</a>
+  <a class="corner-ribbon" href="https://github.com/CodeBoy2006/llm-handbook-qa" target="_blank" rel="noopener noreferrer" aria-label="在 GitHub 为本项目加星">GITHUB</a>
 
   <!-- 左上角 Token 设置 -->
   <button class="token-btn" id="tokenBtn" title="设置 API Token">
@@ -328,7 +391,7 @@
       showTokenModal() {
         const modalBody = `
           <p>请输入您的 API Token (通行证)，它将被保存在您的浏览器本地。</p>
-          <input type="password" id="tokenInput" class="token-modal-input" placeholder="tok_..." value="${this.getToken() || ''}">
+          <input type="password" id="tokenInput" class="token-modal-input" placeholder="tok_..." value="\${this.getToken() || ''}">
           <button id="saveTokenBtn" class="token-modal-btn">保存并关闭</button>
         `;
         this.showModal('设置 API Token', modalBody);
@@ -382,57 +445,185 @@
       }
       /* ================================================ */
 
-      showLoading() { /* ... (与你提供的一致) */
-        this.searchBtn.disabled = true; this.searchBtn.querySelector('.btn-text').style.display = 'none'; this.loadingSpinner.style.display = 'block'; this.loadingText.style.display = 'block'; this.resultSection.style.display = 'none';
+      showLoading() {
+        this.searchBtn.disabled = true;
+        this.searchBtn.querySelector('.btn-text').style.display = 'none';
+        this.loadingSpinner.style.display = 'block';
+        this.loadingText.style.display = 'block';
+        this.resultSection.style.display = 'none';
       }
-      hideLoading() { /* ... (与你提供的一致) */
-        this.searchBtn.disabled = false; this.searchBtn.querySelector('.btn-text').style.display = 'block'; this.loadingSpinner.style.display = 'none'; this.loadingText.style.display = 'none';
+      hideLoading() {
+        this.searchBtn.disabled = false;
+        this.searchBtn.querySelector('.btn-text').style.display = 'block';
+        this.loadingSpinner.style.display = 'none';
+        this.loadingText.style.display = 'none';
       }
-      displayResults(data) { /* ... (与你提供的一致) */
-        const answer = this.normalizeAnswerShape(data?.answer); this.chunkMap = data?.chunk_map || {}; this.questionDisplay.textContent = data?.query || ''; this.renderConclusion(answer?.conclusion); this.renderAnswerList(answer?.answer_list); this.renderEvidence(data?.evidence || []); this.resultSection.style.display = 'block'; setTimeout(() => this.resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+      displayResults(data) {
+        const answer = this.normalizeAnswerShape(data?.answer);
+        this.chunkMap = data?.chunk_map || {};
+        this.questionDisplay.textContent = data?.query || '';
+        this.renderConclusion(answer?.conclusion);
+        this.renderAnswerList(answer?.answer_list);
+        this.renderEvidence(data?.evidence || []);
+        this.resultSection.style.display = 'block';
+        setTimeout(() => this.resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
       }
-      renderConclusion(conclusionRaw) { /* ... (与你提供的一致) */
-        const c = (conclusionRaw ?? '').toString().trim(); const classified = this.classifyConclusion(c); this.conclusionWrap.style.display = 'block'; this.conclusionCard.setAttribute('data-type', classified.type); this.conclusionValue.textContent = c || '未给出明确结论'; this.conclusionChip.textContent = classified.chip; this.conclusionCard.title = `类型：${classified.typeLabel}`;
+      renderConclusion(conclusionRaw) {
+        const c = (conclusionRaw ?? '').toString().trim();
+        const classified = this.classifyConclusion(c);
+        this.conclusionWrap.style.display = 'block';
+        this.conclusionCard.setAttribute('data-type', classified.type);
+        this.conclusionValue.textContent = c || '未给出明确结论';
+        this.conclusionChip.textContent = classified.chip;
+        this.conclusionCard.title = `类型：${classified.typeLabel}`;
       }
-      classifyConclusion(text) { /* ... (与你提供的一致) */
-        if (!text) return { type: 'summary', chip: '—', typeLabel: '无/摘要' }; const t = text.replace(/\s+/g,'').toUpperCase(); const positive = ['正确','对','是','YES','TRUE'].includes(text) || ['√','✔️','✅'].includes(text); const negative = ['错误','否','NO','FALSE'].includes(text) || ['×','❌'].includes(text); if (positive) return { type:'correct', chip:'✓', typeLabel:'判断题 · 正确' }; if (negative) return { type:'wrong', chip:'✗', typeLabel:'判断题 · 错误' }; if (/^[A-J]$/.test(t)) return { type:'choice', chip:t, typeLabel:'选择题' }; if (/^\d+$/.test(t)) return { type:'choice', chip:t, typeLabel:'选择题（数字）' }; return { type:'summary', chip:'ℹ︎', typeLabel:'摘要/其他' };
+      classifyConclusion(text) {
+        if (!text) return { type: 'summary', chip: '—', typeLabel: '无/摘要' };
+        const t = text.replace(/\s+/g,'').toUpperCase();
+        const positive = ['正确','对','是','YES','TRUE'].includes(text) || ['√','✔️','✅'].includes(text);
+        const negative = ['错误','否','NO','FALSE'].includes(text) || ['×','❌'].includes(text);
+        if (positive) return { type:'correct', chip:'✓', typeLabel:'判断题 · 正确' };
+        if (negative) return { type:'wrong', chip:'✗', typeLabel:'判断题 · 错误' };
+        if (/^[A-J]$/.test(t)) return { type:'choice', chip:t, typeLabel:'选择题' };
+        if (/^\d+$/.test(t)) return { type:'choice', chip:t, typeLabel:'选择题（数字）' };
+        return { type:'summary', chip:'ℹ︎', typeLabel:'摘要/其他' };
       }
-      renderAnswerList(answerList) { /* ... (与你提供的一致) */
-        this.answerContent.innerHTML = ''; const list = Array.isArray(answerList) ? answerList : []; if (!list.length) { this.answerContent.innerHTML = `<div class="sentence"><div class="sentence-text">未找到相关信息</div></div>`; return; } list.forEach((item, idx) => { const sentence = (item?.sentence ?? item?.text ?? '').toString(); const cits = Array.isArray(item?.citations) ? item.citations : []; const sentenceDiv = document.createElement('div'); sentenceDiv.className = 'sentence'; sentenceDiv.style.animationDelay = `${idx * 0.06}s`; const textDiv = document.createElement('div'); textDiv.className = 'sentence-text'; textDiv.appendChild(document.createTextNode(sentence)); if (cits.length) { textDiv.appendChild(document.createTextNode(' ')); cits.forEach((cid, i) => { const sup = document.createElement('sup'); const span = document.createElement('span'); span.className = 'citation'; span.textContent = `[${cid}]`; span.dataset.citationId = cid; sup.appendChild(span); textDiv.appendChild(sup); if (i < cits.length - 1) textDiv.appendChild(document.createTextNode(' ')); }); } sentenceDiv.appendChild(textDiv); this.answerContent.appendChild(sentenceDiv); }); this.answerContent.querySelectorAll('.citation').forEach(el => { const cid = el.dataset.citationId; el.addEventListener('mouseenter', (e) => this.showTooltip(e, cid)); el.addEventListener('mouseleave', (e) => this.hideAllTooltips()); el.addEventListener('click', () => this.showChunkDetails(cid)); });
+      renderAnswerList(answerList) {
+        this.answerContent.innerHTML = '';
+        const list = Array.isArray(answerList) ? answerList : [];
+        if (!list.length) {
+          this.answerContent.innerHTML = `<div class="sentence"><div class="sentence-text">未找到相关信息</div></div>`;
+          return;
+        }
+        list.forEach((item, idx) => {
+          const sentence = (item?.sentence ?? item?.text ?? '').toString();
+          const cits = Array.isArray(item?.citations) ? item.citations : [];
+          const sentenceDiv = document.createElement('div');
+          sentenceDiv.className = 'sentence';
+          sentenceDiv.style.animationDelay = `${idx * 0.06}s`;
+          const textDiv = document.createElement('div');
+          textDiv.className = 'sentence-text';
+          textDiv.appendChild(document.createTextNode(sentence));
+          if (cits.length) {
+            textDiv.appendChild(document.createTextNode(' '));
+            cits.forEach((cid, i) => {
+              const sup = document.createElement('sup');
+              const span = document.createElement('span');
+              span.className = 'citation';
+              span.textContent = `[${cid}]`;
+              span.dataset.citationId = cid;
+              sup.appendChild(span);
+              textDiv.appendChild(sup);
+              if (i < cits.length - 1) textDiv.appendChild(document.createTextNode(' '));
+            });
+          }
+          sentenceDiv.appendChild(textDiv);
+          this.answerContent.appendChild(sentenceDiv);
+        });
+        this.answerContent.querySelectorAll('.citation').forEach(el => {
+          const cid = el.dataset.citationId;
+          el.addEventListener('mouseenter', (e) => this.showTooltip(e, cid));
+          el.addEventListener('mouseleave', (e) => this.hideAllTooltips());
+          el.addEventListener('click', () => this.showChunkDetails(cid));
+        });
       }
-      renderEvidence(evidenceArr) { /* ... (与你提供的一致) */
-        this.evidenceList.innerHTML = ''; if (!Array.isArray(evidenceArr) || !evidenceArr.length) return; const unique = [...new Set(evidenceArr.map(x => x?.chunk_id).filter(Boolean))]; unique.forEach(cid => { const div = document.createElement('div'); div.className = 'evidence-item'; div.textContent = `资料片段 ${cid}`; div.addEventListener('click', () => this.showChunkDetails(cid)); this.evidenceList.appendChild(div); });
+      renderEvidence(evidenceArr) {
+        this.evidenceList.innerHTML = '';
+        if (!Array.isArray(evidenceArr) || !evidenceArr.length) return;
+        const unique = [...new Set(evidenceArr.map(x => x?.chunk_id).filter(Boolean))];
+        unique.forEach(cid => {
+          const div = document.createElement('div');
+          div.className = 'evidence-item';
+          div.textContent = `资料片段 ${cid}`;
+          div.addEventListener('click', () => this.showChunkDetails(cid));
+          this.evidenceList.appendChild(div);
+        });
       }
-      createTooltipRoot() { /* ... (与你提供的一致) */
-        const el = document.createElement('div'); el.id = 'tooltip-root'; el.className = 'tooltip-root'; document.body.appendChild(el); return el;
+      createTooltipRoot() {
+        const el = document.createElement('div');
+        el.id = 'tooltip-root';
+        el.className = 'tooltip-root';
+        document.body.appendChild(el);
+        return el;
       }
-      showTooltip(event, citationId) { /* ... (与你提供的一致) */
-        this.hideAllTooltips(); const content = this.chunkMap?.[citationId]; if (!content) return; const truncated = content.length > 280 ? content.slice(0, 280) + '…' : content; const tip = document.createElement('div'); tip.className = 'tooltip'; tip.innerHTML = this.formatText(truncated); this.tooltipRoot.appendChild(tip); const anchor = event.target; const r = anchor.getBoundingClientRect(); const tipRect = tip.getBoundingClientRect(); let placement = 'top'; let top = r.top - tipRect.height - 10; if (top < 8) { placement = 'bottom'; top = r.bottom + 10; } let left = r.left + r.width / 2 - tipRect.width / 2; const gutter = 8; left = Math.max(gutter, Math.min(left, window.innerWidth - tipRect.width - gutter)); tip.style.top = `${Math.round(top)}px`; tip.style.left = `${Math.round(left)}px`; tip.setAttribute('data-placement', placement); requestAnimationFrame(() => tip.classList.add('show'));
+      showTooltip(event, citationId) {
+        this.hideAllTooltips();
+        const content = this.chunkMap?.[citationId];
+        if (!content) return;
+        const truncated = content.length > 280 ? content.slice(0, 280) + '…' : content;
+        const tip = document.createElement('div');
+        tip.className = 'tooltip';
+        tip.innerHTML = this.formatText(truncated);
+        this.tooltipRoot.appendChild(tip);
+        const anchor = event.target;
+        const r = anchor.getBoundingClientRect();
+        const tipRect = tip.getBoundingClientRect();
+        let placement = 'top';
+        let top = r.top - tipRect.height - 10;
+        if (top < 8) { placement = 'bottom'; top = r.bottom + 10; }
+        let left = r.left + r.width / 2 - tipRect.width / 2;
+        const gutter = 8;
+        left = Math.max(gutter, Math.min(left, window.innerWidth - tipRect.width - gutter));
+        tip.style.top = `${Math.round(top)}px`;
+        tip.style.left = `${Math.round(left)}px`;
+        tip.setAttribute('data-placement', placement);
+        requestAnimationFrame(() => tip.classList.add('show'));
       }
-      hideAllTooltips() { /* ... (与你提供的一致) */
-        const tips = this.tooltipRoot?.querySelectorAll('.tooltip') || []; tips.forEach(t => t.remove());
+      hideAllTooltips() {
+        const tips = this.tooltipRoot?.querySelectorAll('.tooltip') || [];
+        tips.forEach(t => t.remove());
       }
-      formatText(text) { /* ... (与你提供的一致) */
-        return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/\n/g, '<br>');
+      formatText(text) {
+        return text
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/\n/g, '<br>');
       }
-      showChunkDetails(cid) { /* ... (与你提供的一致) */
-        const content = this.chunkMap?.[cid]; if (!content) return; this.showModal(`参考资料：片段 ${cid}`, this.formatText(content));
+      showChunkDetails(cid) {
+        const content = this.chunkMap?.[cid];
+        if (!content) return;
+        this.showModal(`参考资料：片段 ${cid}`, this.formatText(content));
       }
-      showModal(title, html) { /* ... (与你提供的一致) */
-        this.modalTitle.textContent = title; this.modalBody.innerHTML = html; this.modal.classList.add('show'); this.modal.setAttribute('aria-hidden','false'); document.body.style.overflow = 'hidden';
+      showModal(title, html) {
+        this.modalTitle.textContent = title;
+        this.modalBody.innerHTML = html;
+        this.modal.classList.add('show');
+        this.modal.setAttribute('aria-hidden','false');
+        document.body.style.overflow = 'hidden';
       }
-      hideModal() { /* ... (与你提供的一致) */
-        this.modal.classList.remove('show'); this.modal.setAttribute('aria-hidden','true'); document.body.style.overflow = ''; this.modal.classList.remove('token-modal'); // 清理弹窗特定样式
+      hideModal() {
+        this.modal.classList.remove('show');
+        this.modal.setAttribute('aria-hidden','true');
+        document.body.style.overflow = '';
+        this.modal.classList.remove('token-modal'); // 清理弹窗特定样式
       }
-      showError(msg) { /* ... (与你提供的一致) */
-        this.errorMessage.textContent = msg; this.errorMessage.style.display = 'block'; this.resultSection.style.display = 'none';
+      showError(msg) {
+        this.errorMessage.textContent = msg;
+        this.errorMessage.style.display = 'block';
+        this.resultSection.style.display = 'none';
       }
       hideError(){ this.errorMessage.style.display = 'none'; }
-      flashButton(btn, text){ /* ... (与- (与你提供的一致) */
-        const orig = btn.textContent; btn.textContent = text; btn.disabled = true; setTimeout(()=>{ btn.textContent = orig; btn.disabled = false; }, 900);
+      flashButton(btn, text){
+        const orig = btn.textContent;
+        btn.textContent = text;
+        btn.disabled = true;
+        setTimeout(()=>{ btn.textContent = orig; btn.disabled = false; }, 900);
       }
-      normalizeAnswerShape(answer) { /* ... (与你提供的一致) */
-        if (!answer || typeof answer !== 'object') return { conclusion: null, answer_list: [] }; if ('answer_list' in answer || 'conclusion' in answer) { const conclusion = (answer.conclusion ?? null); const list = Array.isArray(answer.answer_list) ? answer.answer_list : []; return { conclusion, answer_list: list }; } if (Array.isArray(answer.sentences)) { const mapped = answer.sentences.map(s => ({ sentence: (s?.text ?? '').toString(), citations: Array.isArray(s?.citations) ? s.citations : [], })); return { conclusion: null, answer_list: mapped }; } return { conclusion: null, answer_list: [] };
+      normalizeAnswerShape(answer) {
+        if (!answer || typeof answer !== 'object') return { conclusion: null, answer_list: [] };
+        if ('answer_list' in answer || 'conclusion' in answer) {
+          const conclusion = (answer.conclusion ?? null);
+          const list = Array.isArray(answer.answer_list) ? answer.answer_list : [];
+          return { conclusion, answer_list: list };
+        }
+        if (Array.isArray(answer.sentences)) {
+          const mapped = answer.sentences.map(s => ({
+            sentence: (s?.text ?? '').toString(),
+            citations: Array.isArray(s?.citations) ? s.citations : [],
+          }));
+          return { conclusion: null, answer_list: mapped };
+        }
+        return { conclusion: null, answer_list: [] };
       }
     }
 
